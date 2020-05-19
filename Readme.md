@@ -1,6 +1,7 @@
 # Guía 2. Dockefile y Docker Compose
 
-En esta guía vamos a desarrollar una aplicación en Python que incluya un contador cuyo valor se guardará en un almacenamiento Redis. Este sería el código:
+En esta guía vamos a desarrollar una aplicación en Python que incluya un contador cuyo valor se guardará en un almacenamiento Redis.
+Para ello, crearemos el fichero app.py con el código:
 
 ```python
 from flask import Flask
@@ -31,7 +32,9 @@ if __name__ == "__main__":
 ```
 
 Como vemos, se importan una serie de paquetes, se crea una conexión con un almacenamiento Redis que estaría ubicado en un host llamado redis y una vez iniciado el programa, atenderá peticiones desde cualquier host, por el puerto 80 y ejecutará la función hello que obtendrá el objeto counter del almacenamiento Redis, lo incrementará y lo guardará en la variable visits. Si se produce algún error durante la conexión con Redis, se guardará en la variable visist un mensaje indicando el error.
+
 Este código tiene como dependencias los paquetes Flask y Redis, que necesitamos instalar mediante el instalador de paquetes de Python (pip). Para ello, vamos a crear un fichero requirements.txt incluyendo estas dependencias.
+
 ```
 # requirements.txt
 Flask
