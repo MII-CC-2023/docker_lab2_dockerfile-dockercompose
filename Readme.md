@@ -1,0 +1,206 @@
+# Guía 2. Dockefile y Docker Compose
+
+En esta guía vamos a desarrollar una aplicación en Python que incluya un contador cuyo valor se guardará en un almacenamiento Redis. Este sería el código:
+
+```python
+from flask import Flask
+from redis import Redis, RedisError
+import os
+import socket
+
+# Connect to Redis
+redis = Redis(host="redis", db=0, socket_connect_timeout=2, socket_timeout=2)
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    try:
+        visits = redis.incr("counter")
+    except RedisError:
+        visits = "<i>cannot connect to Redis, counter disabled</i>"
+
+    html = "<h3>Welcome {name}!</h3>" \
+           "<b>Hostname:</b> {hostname}<br/>" \
+           "<b>Visits:</b> {visits}"
+    return html.format(name=os.getenv("NAME", "world"),hostname=socket.gethostname(), 
+                                       visits=visits)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=80)
+```
+
+Como vemos, se importan una serie de paquetes, se crea una conexión con un almacenamiento Redis que estaría ubicado en un host llamado redis y una vez iniciado el programa, atenderá peticiones desde cualquier host, por el puerto 80 y ejecutará la función hello que obtendrá el objeto counter del almacenamiento Redis, lo incrementará y lo guardará en la variable visits. Si se produce algún error durante la conexión con Redis, se guardará en la variable visist un mensaje indicando el error.
+Este código tiene como dependencias los paquetes Flask y Redis, que necesitamos instalar mediante el instalador de paquetes de Python (pip). Para ello, vamos a crear un fichero requirements.txt incluyendo estas dependencias.
+```
+# requirements.txt
+Flask
+Redis
+```
+En un entorno de Python se instalarían con:
+```
+$ pip install -r requirements.txt
+```
+Una vez definida la aplicación, vamos a crear una imagen a partir de un Dockerfile para nuestra aplicación y la ejecutaremos en un contenedor.
+
+## 1. Fichero Dockerfile
+(https://docs.docker.com/engine/reference/builder/)
+
+```
+# Use an official Python runtime as a parent image
+FROM python:3.7-slim
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
+
+# Make port 80 available to the world outside this container
+EXPOSE 80
+
+# Define environment variable
+ENV NAME World
+
+# Run app.py when the container launches
+CMD ["python", "app.py"]
+```
+
+## 2. Construir la imagen 
+```
+$ docker build --tag=python-webapp .
+```
+
+## 3. Ejecuta en un contenedor
+```
+$ docker run -d -p 80:80 --name webapp python-webapp
+```
+Abre el navegador y comprueba el resultado.
+ 
+Obviamente, aún no tenemos el contenedor con el almacenamiento Redis; por lo tanto, aparece el mensaje de error.
+
+## 4. SDubir la imagen a docker Hub
+
+Introduce las credenciales
+```
+$ docker login
+```
+Etiqueta la imagen con tu usuario, el nombre que desees darle a la imagen y el tag
+```
+$ docker tag image username/imagen:tag
+```
+NOTA: Cambia username, imagen y tag con los valores adecuados.
+
+Sube la imagen al DockerHub
+```
+$ docker push username/imagen:tag
+```
+NOTA: Cambia username, imagen y tag con los valores adecuados.
+
+## 5. Elimina el contenedor y la imagen del host local
+```
+$ docker stop webapp
+$ docker container rm webapp
+$ docker image rm python-webapp
+```
+
+## 6. Iniciar un contenedor con el almacenamiento Redis 
+Si lo necesitas, Busca en el Docker Hub para más información sobre la imagen Redis.
+```
+$ docker run --name redis -d redis
+```
+
+## 7. Ejecuta un contenedor con la imagen de la aplicación del Docker Hub
+Conectándola con el almacenamiento Redis
+```
+$ docker run --name front-end -d -p 80:80 --link redis username/imagen:tag
+```
+NOTA: Recuerda que username, imagen y tag deben ser los valores de la imagen en el DockerHub.
+
+Abre el navegador y comprueba el resultado.
+ 
+Ya disponemos del contenedor con el almacenamiento Redis; por lo tanto, 
+aparece el número de visitas, que se irá aumentando con cada visita. 
+Sin embargo, si el contendor redis se destruye no persistirán los datos y 
+si un nuevo contenedor redis es creado comenzará la cuenta de visitas de nuevo desde el principio.
+```
+$ docker stop redis
+$ docker container rm redis
+$ docker run --name redis -d redis
+```
+Ver de nuevo en el navegador.
+
+Para resolver este problema, vamos a añadir un volumen persistente al contenedor redis.
+
+Creamos el volumen:
+```
+$ docker volume create redis-vol
+```
+Podemos inspeccionarlo
+```
+$ docker volume inspect redis-vol
+```
+También, podemos eliminarlo con:
+```
+$ docker volume rm redis-vol
+```
+Si volvemos a ejecutar el contenedor Redis pero ahora con el volumen persistente
+```
+$ docker run --name redis -d -v redis-vol:/data redis
+`` 
+Si ahora paramos y eliminamos el contenedor, al iniciar uno nuevo con el mismo volumen 
+el contador habrá persistido, continuando por el siguiente valor.
+
+
+
+
+
+
+
+
+
+
+# Docker compose
+## 1. Instalar docker-compose
+```
+$ sudo curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+$ sudo chmod +x /usr/local/bin/docker-compose
+
+$ docker-compose --version
+docker-compose version 1.25.5, build 1110ad01
+```
+
+## 2. Crear el fichero docker-compose.yml con los servicios, volúmenes, etc.
+```
+version: '3.8'
+services:
+  redis:
+    image: redis
+    container_name: redis
+    volumes:
+      - redis-vol:/data
+  web-app:
+    image: python-webapp
+    container_name: python-app
+    ports:
+      - "80:80"
+    depends_on:
+      - redis
+volumes:
+  redis-vol:
+    name: redis-vol
+```
+
+## 3. Iniciar los servicios
+```
+$ docker-compose up -d
+```
+## 4.- Detener los servicios
+```
+$ docker-compose down
+```
+
