@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  redis:
+    image: redis
+    container_name: redis
+    volumes:
+      - redis-vol:/data
+  web-app:
+    image: jluisalvarez/python-webapp
+    container_name: python-app
+    ports:
+      - "80:80"
+    depends_on:
+      - redis
+volumes:
+  redis-vol:
+    name: redis-vol
+

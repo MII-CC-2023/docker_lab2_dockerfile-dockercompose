@@ -199,7 +199,7 @@ volumes:
 ```
 $ docker-compose up -d
 ```
-## 4.- Detener los servicios
+## 4. Detener los servicios
 ```
 $ docker-compose down
 ```
