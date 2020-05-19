@@ -85,7 +85,7 @@ Abre el navegador y comprueba el resultado.
  
 Obviamente, aún no tenemos el contenedor con el almacenamiento Redis; por lo tanto, aparece el mensaje de error.
 
-## 4. SDubir la imagen a docker Hub
+## 4. Subir la imagen a docker Hub
 
 Introduce las credenciales
 ```
@@ -93,7 +93,7 @@ $ docker login
 ```
 Etiqueta la imagen con tu usuario, el nombre que desees darle a la imagen y el tag
 ```
-$ docker tag image username/imagen:tag
+$ docker tag imagen username/imagen:tag
 ```
 NOTA: Cambia username, imagen y tag con los valores adecuados.
 
@@ -116,8 +116,9 @@ Si lo necesitas, Busca en el Docker Hub para más información sobre la imagen R
 $ docker run --name redis -d redis
 ```
 
-## 7. Ejecuta un contenedor con la imagen de la aplicación del Docker Hub
+## 7. Iniciar contenedor con la imagen de la aplicación del Docker Hub y conun volumen
 Conectándola con el almacenamiento Redis
+
 ```
 $ docker run --name front-end -d -p 80:80 --link redis username/imagen:tag
 ```
@@ -129,6 +130,7 @@ Ya disponemos del contenedor con el almacenamiento Redis; por lo tanto,
 aparece el número de visitas, que se irá aumentando con cada visita. 
 Sin embargo, si el contendor redis se destruye no persistirán los datos y 
 si un nuevo contenedor redis es creado comenzará la cuenta de visitas de nuevo desde el principio.
+
 ```
 $ docker stop redis
 $ docker container rm redis
@@ -138,32 +140,27 @@ Ver de nuevo en el navegador.
 
 Para resolver este problema, vamos a añadir un volumen persistente al contenedor redis.
 
-Creamos el volumen:
+### Creamos el volumen:
 ```
 $ docker volume create redis-vol
 ```
 Podemos inspeccionarlo
+
 ```
 $ docker volume inspect redis-vol
 ```
 También, podemos eliminarlo con:
+
 ```
 $ docker volume rm redis-vol
 ```
 Si volvemos a ejecutar el contenedor Redis pero ahora con el volumen persistente
+
 ```
 $ docker run --name redis -d -v redis-vol:/data redis
-`` 
+``` 
 Si ahora paramos y eliminamos el contenedor, al iniciar uno nuevo con el mismo volumen 
 el contador habrá persistido, continuando por el siguiente valor.
-
-
-
-
-
-
-
-
 
 
 # Docker compose
