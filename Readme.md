@@ -1,4 +1,4 @@
-# Guía 2. Dockefile y Docker Compose
+# Lab 2. Dockefile y Docker Compose
 
 En esta guía vamos a desarrollar una aplicación en Python que incluya un contador cuyo valor se guardará en un almacenamiento Redis.
 Para ello, crearemos el fichero app.py con el código:
@@ -74,12 +74,12 @@ CMD ["python", "app.py"]
 
 ## 2. Construir la imagen 
 ```
-$ docker build --tag=python-webapp .
+$ docker image build --tag=python-webapp .
 ```
 
 ## 3. Ejecuta en un contenedor
 ```
-$ docker run -d -p 80:80 --name webapp python-webapp
+$ docker container run -d -p 80:80 --name webapp python-webapp
 ```
 Abre el navegador y comprueba el resultado.
  
@@ -93,19 +93,19 @@ $ docker login
 ```
 Etiqueta la imagen con tu usuario, el nombre que desees darle a la imagen y el tag
 ```
-$ docker tag imagen username/imagen:tag
+$ docker image tag imagen username/imagen:tag
 ```
 NOTA: Cambia username, imagen y tag con los valores adecuados.
 
 Sube la imagen al DockerHub
 ```
-$ docker push username/imagen:tag
+$ docker image push username/imagen:tag
 ```
 NOTA: Cambia username, imagen y tag con los valores adecuados.
 
 ## 5. Elimina el contenedor y la imagen del host local
 ```
-$ docker stop webapp
+$ docker container stop webapp
 $ docker container rm webapp
 $ docker image rm python-webapp
 ```
@@ -113,7 +113,7 @@ $ docker image rm python-webapp
 ## 6. Iniciar un contenedor con el almacenamiento Redis 
 Si lo necesitas, Busca en el Docker Hub para más información sobre la imagen Redis.
 ```
-$ docker run --name redis -d redis
+$ docker container run --name redis -d redis
 ```
 
 ## 7. Iniciar contenedor con la imagen de la aplicación del Docker Hub y conun volumen
@@ -132,9 +132,9 @@ Sin embargo, si el contendor redis se destruye no persistirán los datos y
 si un nuevo contenedor redis es creado comenzará la cuenta de visitas de nuevo desde el principio.
 
 ```
-$ docker stop redis
+$ docker container stop redis
 $ docker container rm redis
-$ docker run --name redis -d redis
+$ docker container run --name redis -d redis
 ```
 Ver de nuevo en el navegador.
 
