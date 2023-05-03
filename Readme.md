@@ -31,7 +31,7 @@ if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80)
 ```
 
-Como vemos, se importan una serie de paquetes, se crea una conexión con un almacenamiento Redis que estaría ubicado en un host llamado redis y una vez iniciado el programa, atenderá peticiones desde cualquier host, por el puerto 80 y ejecutará la función hello que obtendrá el objeto counter del almacenamiento Redis, lo incrementará y lo guardará en la variable visits. Si se produce algún error durante la conexión con Redis, se guardará en la variable visist un mensaje indicando el error.
+Como vemos, se importan los paquetes Flask y Redis, se crea una conexión con un almacenamiento Redis que estaría ubicado en un host llamado redis y una vez iniciado el programa, atenderá peticiones desde cualquier host, por el puerto 80 y ejecutará la función hello que obtendrá el objeto counter del almacenamiento Redis, lo incrementará y lo guardará en la variable visits. Si se produce algún error durante la conexión con Redis, se guardará en la variable visist un mensaje indicando el error.
 
 Este código tiene como dependencias los paquetes Flask y Redis, que necesitamos instalar mediante el instalador de paquetes de Python (pip). Para ello, vamos a crear un fichero requirements.txt incluyendo estas dependencias.
 
@@ -57,7 +57,7 @@ FROM python:3.7-slim
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-COPY . /app
+COPY ./app /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
@@ -87,11 +87,12 @@ Obviamente, aún no tenemos el contenedor con el almacenamiento Redis; por lo ta
 
 ## 4. Subir la imagen a docker Hub
 
-Introduce las credenciales
+Autoriza a Docker a trabajar con tu Docker Hub, introduciendo las credenciales con:
 ```
 $ docker login
 ```
-Etiqueta la imagen con tu usuario, el nombre que desees darle a la imagen y el tag
+
+Etiqueta la imagen con tu usuario, el nombre que desees darle a la imagen y un tag (será lastest si no incluyes ninguno).
 ```
 $ docker image tag imagen username/imagen:tag
 ```
@@ -113,11 +114,12 @@ $ docker image rm python-webapp
 ## 6. Iniciar un contenedor con el almacenamiento Redis 
 Si lo necesitas, Busca en el Docker Hub para más información sobre la imagen Redis.
 ```
-$ docker container run --name redis -d redis
+$ docker container run --name redis -d redis redis-server --save 20 1 --loglevel warning
 ```
 
-## 7. Iniciar contenedor con la imagen de la aplicación del Docker Hub y conun volumen
-Conectándola con el almacenamiento Redis
+## 7. Iniciar contenedor de la aplicación 
+
+Usando la imagen del Docker Hub conectándola con el almacenamiento Redis
 
 ```
 $ docker run --name front-end -d -p 80:80 --link redis username/imagen:tag
@@ -127,20 +129,21 @@ NOTA: Recuerda que username, imagen y tag deben ser los valores de la imagen en 
 Abre el navegador y comprueba el resultado.
  
 Ya disponemos del contenedor con el almacenamiento Redis; por lo tanto, 
-aparece el número de visitas, que se irá aumentando con cada visita. 
+aparecerá el número de visitas, que irá aumentando con cada visita. 
 Sin embargo, si el contendor redis se destruye no persistirán los datos y 
 si un nuevo contenedor redis es creado comenzará la cuenta de visitas de nuevo desde el principio.
 
 ```
 $ docker container stop redis
 $ docker container rm redis
-$ docker container run --name redis -d redis
+$ docker container run --name redis -d redis redis-server --save 20 1 --loglevel warning
 ```
 Ver de nuevo en el navegador.
 
 Para resolver este problema, vamos a añadir un volumen persistente al contenedor redis.
 
-### Creamos el volumen:
+### Creamos el volumen
+
 ```
 $ docker volume create redis-vol
 ```
@@ -157,26 +160,26 @@ $ docker volume rm redis-vol
 Si volvemos a ejecutar el contenedor Redis pero ahora con el volumen persistente
 
 ```
-$ docker run --name redis -d -v redis-vol:/data redis
+$ docker run --name redis -d -v redis-vol:/data redis redis-server --save 20 1 --loglevel warning
 ``` 
 Si ahora paramos y eliminamos el contenedor, al iniciar uno nuevo con el mismo volumen 
 el contador habrá persistido, continuando por el siguiente valor.
 
 
 # Docker compose
-## 1. Instalar docker-compose
+## 1. Docker Compose
+
+Docker Compose, ahora, es un módulo que forma parte de Docker y puede ser instalado como parte de Docker CLI.
+Comprueba si lo tienes instalado con:
+
 ```
-$ sudo curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-
-$ sudo chmod +x /usr/local/bin/docker-compose
-
-$ docker-compose --version
-docker-compose version 1.25.5, build 1110ad01
+$ docker compose --version
+Docker Compose version v2.17.3
 ```
 
 ## 2. Crear el fichero docker-compose.yml con los servicios, volúmenes, etc.
 ```
-version: '3.8'
+version: '3.9'
 services:
   redis:
     image: redis
@@ -196,11 +199,15 @@ volumes:
 ```
 
 ## 3. Iniciar los servicios
+
 ```
 $ docker-compose up -d
 ```
+
 ## 4. Detener los servicios
+
 ```
 $ docker-compose down
 ```
+
 

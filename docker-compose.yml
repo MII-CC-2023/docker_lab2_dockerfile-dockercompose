@@ -6,7 +6,7 @@ services:
     volumes:
       - redis-vol:/data
   web-app:
-    image: jluisalvarez/python-webapp
+    image: jluisalvarez/python-webapp:2023
     container_name: python-app
     ports:
       - "80:80"
